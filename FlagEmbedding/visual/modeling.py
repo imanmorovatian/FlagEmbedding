@@ -59,10 +59,11 @@ class Visualized_BGE(nn.Module):
             bge_config = AutoConfig.from_pretrained(from_pretrained, local_files_only=True)
             bge = AutoModel.from_config(bge_config)
         
-        self.bge_encoder = bge.encoder
+        self.bge_encoder = bge.encoder # Pre-Trained Text Encoder in the paper
         self.bge_embeddings = bge.embeddings
         self.bge_pooler = bge.pooler
-
+        
+        # ViT Encoder in the paper. Image tokens are generated in img_token_embedding method
         self.model_visual, self.preprocess_train, self.preprocess_val= create_eva_vision_and_transforms(
             model_name_eva, 
             force_custom_clip=True)
