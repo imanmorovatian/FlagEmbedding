@@ -21,7 +21,7 @@ model = Visualized_BGE(model_name_bge='BAAI/bge-base-en-v1.5', model_weight='Vis
 model = model.to(device)
 
 test_dataset = MSCOCOCaptions(
-    root='../modality-invariance-VLMs/data/images/mscoco/test2017/',
+    root='../modality-invariance-VLMs/data/images/mscoco/train2017/',
     annotations_file='../modality-invariance-VLMs/data/annotations/mscoco/test2017_captions.json',
     image_transform=None,
     caption_transform=None,
@@ -60,37 +60,46 @@ with torch.no_grad():
             text_to_image_map += [image_index] * captions_per_image
             image_index += 1
 
-        image_embeds = []
-        text_embeds = []
+        batch_image_embeds = []
+        batch_text_embeds = []
         for img_id in range(batch_size):
-            image_embeds.append( model.encode(image=images[img_id]) )
+            batch_image_embeds.append( model.encode(image=images[img_id]) )
 
             temp = []
             for cap_id in range(captions_per_image):
                 temp.append( model.encode(text=text[cap_id][img_id]) )
             
             temp = torch.vstack(temp)
-            text_embeds.append(temp)
+            batch_text_embeds.append(temp)
 
-        loss = compute_contrastive_loss(image_embeds, text_embeds[::captions_per_image], temperature)
+        batch_image_embeds = torch.vstack(batch_image_embeds)
+        batch_image_embeds = batch_image_embeds.to(device)
+
+        batch_text_embeds = torch.vstack(batch_text_embeds)
+        batch_text_embeds = batch_text_embeds.to(device)
+
+        loss = compute_contrastive_loss(batch_image_embeds, batch_text_embeds[::captions_per_image], temperature)
         total_loss += loss.item()
         total_batches += 1
-                        
+
+        image_features.append(batch_image_embeds)
+        text_features.append(batch_text_embeds)
+
     text_to_image_map = torch.Tensor(text_to_image_map).to(device)
     image_to_text_map = torch.Tensor(image_to_text_map).to(device)
 
-    image_embeds = torch.vstack(image_embeds)
-    image_embeds = image_embeds.to(device)
-    image_embeds = torch.nn.functional.normalize(image_embeds, p=2.0, dim=1)
+    image_features = torch.vstack(image_features)
+    image_features = image_features.to(device)
+    image_features = torch.nn.functional.normalize(image_features, p=2.0, dim=1)
 
-    text_embeds = torch.vstack(text_embeds)
-    text_embeds = text_embeds.to(device)
-    text_embeds = torch.nn.functional.normalize(text_embeds, p=2.0, dim=1)
+    text_features = torch.vstack(text_features)
+    text_features = text_features.to(device)
+    text_features = torch.nn.functional.normalize(text_features, p=2.0, dim=1)
 
             
 retrieval_inputs = {
-    'text_embeddings': text_embeds.squeeze(),
-    'image_embeddings': image_embeds.squeeze(),
+    'text_embeddings': text_features.squeeze(),
+    'image_embeddings': image_features.squeeze(),
     'text_to_image_mapping': text_to_image_map.squeeze(),
     'image_to_text_mapping': image_to_text_map.squeeze(),
     'loss': total_loss / total_batches
