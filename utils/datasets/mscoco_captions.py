@@ -2,8 +2,8 @@ import os
 import json
 from collections import OrderedDict, defaultdict
 import numpy as np
-from pathlib import Path
 from PIL import Image
+from pathlib import Path
 from typing import Callable, Optional
 
 from torch.utils.data import Dataset
@@ -68,9 +68,9 @@ class MSCOCOCaptions(Dataset):
         img_id = self.img_ids[index]
 
         # Image
-        # filename = os.path.join(self.root, self.img_id_to_file_name[img_id])
-        # img = Image.open(filename).convert("RGB")
-        img = os.path.join(self.root, self.img_id_to_file_name[img_id])
+        filename = os.path.join(self.root, self.img_id_to_file_name[img_id])
+        img = Image.open(filename).convert("RGB")
+        # img = os.path.join(self.root, self.img_id_to_file_name[img_id])
         if self.image_transform is not None:
             img = self.image_transform(img)
 
