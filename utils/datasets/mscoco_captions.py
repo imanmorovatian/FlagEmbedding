@@ -28,7 +28,7 @@ class MSCOCOCaptions(Dataset):
         annotations_file: str,
         image_transform: Optional[Callable] = None,
         caption_transform: Optional[Callable] = None,
-        max_length_tokenizer: int = 64,
+        max_length_tokenizer: int = 77,
         no_cap_per_img = 1
     ) -> None:
         super(MSCOCOCaptions, self).__init__()
