@@ -141,7 +141,6 @@ pic2.py
 temp.py
 vista/
 .vscode/
-Visualized_base_en_v1.5.pth
-Visualized_m3.pth
-data/bpe/bpe_simple_vocab_16e6.txt.gz
+wandb/
+weights/
 experiment_scripts/
