@@ -115,16 +115,16 @@ class Visualized_BGE(nn.Module):
     def encode(self, image=None, text=None):
         # used for simple inference
         if image is not None:
-            image = self.preprocess_val(Image.open(image)).unsqueeze(0)
+            # image = self.preprocess_val(Image.open(image)).unsqueeze(0)
 
             if text is not None:
-                text = self.tokenizer(text, return_tensors="pt", padding=True)
+                # text = self.tokenizer(text, return_tensors="pt", padding=True)
                 return self.encode_mm(image.to(self.device), text.to(self.device))
             else:
                 return self.encode_image(image.to(self.device))
         else:
             if text is not None:
-                text = self.tokenizer(text, return_tensors="pt", padding=True)
+                # text = self.tokenizer(text, return_tensors="pt", padding=True)
                 return self.encode_text(text.to(self.device))
             else:
                 return None
@@ -185,7 +185,9 @@ class Visualized_BGE(nn.Module):
         encode text only
         '''
         input_ids = texts['input_ids']
+        input_ids = torch.flatten(input_ids, start_dim=0, end_dim=1)
         attention_mask = texts['attention_mask']
+        attention_mask = torch.flatten(attention_mask, start_dim=0, end_dim=1)
 
         input_shape = input_ids.size()
         device = input_ids.device
@@ -216,8 +218,8 @@ class Visualized_BGE(nn.Module):
         )
         sequence_output = encoder_outputs[0]
         # pooled_output = self.bge_pooler(sequence_output) if self.bge_pooler is not None else None
-
-        t_reps = self.sentence_embedding(sequence_output, texts['attention_mask']) # tensor: reps with pooling
+        # t_reps = self.bge_pooler(sequence_output)
+        t_reps = self.sentence_embedding(sequence_output, attention_mask) # tensor: reps with pooling
         if self.normlized:
             t_reps = torch.nn.functional.normalize(t_reps, dim=-1)
         return t_reps.contiguous()
@@ -288,7 +290,7 @@ class Visualized_BGE(nn.Module):
             return_dict=True,
         )
         sequence_output = encoder_outputs[0]
-        
+        # prompt_img_reps = self.bge_pooler(sequence_output)
         prompt_img_reps = self.sentence_embedding(sequence_output, prom_img_attention_mask) # tensor: reps with pooling
         if self.normlized:
             prompt_img_reps = torch.nn.functional.normalize(prompt_img_reps, dim=-1)
