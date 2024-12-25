@@ -34,7 +34,7 @@ class CustomVISTA():
         # the local, you must specify using the *_from_local arguments
         if local_pretrained_weights_path is not None:
             local_state_dict = torch.load(local_pretrained_weights_path, map_location=torch.device('cpu'))
-            hybrid_state_dict = {}
+            hybrid_state_dict = self.model.state_dict()
 
             if text_encoder_from_local:
                 for name, param in local_state_dict.items():
@@ -46,11 +46,6 @@ class CustomVISTA():
                     # don't worry, visual linear layer params start with visual_proj
                     if name.startswith('model_visual'):
                         hybrid_state_dict[name] = param
-
-            filled_params = set(hybrid_state_dict.keys())
-            for name, param in self.model.named_parameters():
-                if name not in filled_params:
-                    hybrid_state_dict[name] = param
 
             self.model.load_state_dict(hybrid_state_dict)
 
