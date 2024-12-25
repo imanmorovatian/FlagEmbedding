@@ -20,7 +20,7 @@ def create_model(name, local_path=None):
     if name == 'zero_shot_VISTA':
         return CustomVISTA()
     elif name == 'VISTA':
-        return CustomVISTA(text_encoder_from_local=True, mage_encoder_from_local=True, local_pretrained_weights_path=local_path)
+        return CustomVISTA(text_encoder_from_local=True, image_encoder_from_local=True, local_pretrained_weights_path=local_path)
     else:
         raise ValueError('The selected model is not implemented yet')
     

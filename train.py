@@ -67,6 +67,15 @@ BATCH_SIZE = args.BATCH_SIZE
 NO_EPOCHS = args.NO_EPOCHS
 NUM_WORKERS = 2
 
+# for debug
+# MODEL = 'VISTA_LU+UL'
+# PATH = 'weights/VISTA/LiUi_clip_loss_mscoco.pth'
+# LOSS = 'clip'
+# DATASET = 'mscoco'
+# BATCH_SIZE = 64
+# NO_EPOCHS = 10
+# NUM_WORKERS = 2
+
 assert MODEL in ['VISTA_LU', 'VISTA_UL', 'VISTA_UU', 'VISTA_UL+LU', 'VISTA_LU+UL']
 
 assert DATASET in ['mscoco', 'flickr30k', 'conceptualCaptions']
