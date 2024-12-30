@@ -2,6 +2,7 @@ import os
 import argparse
 import csv
 
+import torch
 from torch.utils.data import DataLoader, SequentialSampler
 
 from utils.datasets.flickr30k_captions import Flickr30kCaptions
@@ -34,6 +35,7 @@ def parse_args():
     parser.add_argument("--dataset", type=str, required=True, help='name of the dataset', dest='DATASET')
     parser.add_argument('--batch_size', type=int, required=True, help='batch size', dest='BATCH_SIZE')
     parser.add_argument('--captions_per_image', type=int, required=True, help='number of captions per image', dest='CPI')
+    parser.add_argument('--save-embds', action='store_true', help='whether to save the embeddings of images and text', dest='SAVE_EMBDS')
 
     args = parser.parse_args()
 
@@ -47,6 +49,7 @@ LOSS = args.LOSS
 DATASET = args.DATASET
 BATCH_SIZE = args.BATCH_SIZE
 CPI = args.CPI # captions per image
+SAVE_EMBDS = args.SAVE_EMBDS # whether to save the embeddings of images and text
 NUM_WORKERS = 2
 
 #  for debugging
@@ -112,6 +115,14 @@ else:
     raise ValueError('The selected loss is not supported')
 
 retrieval_inputs = model.encode_for_retrieval(test_dataloader, loss_function)
+
+if SAVE_EMBDS:
+    result_dir = f'results/embeddings/{MODEL}/{DATASET}/'
+    if not os.path.exists(result_dir):
+        os.makedirs(result_dir)
+
+    torch.save(retrieval_inputs['image_embeddings'], result_dir+'image.pt')
+    torch.save(retrieval_inputs['text_embeddings'], result_dir+'text.pt')
 
 metrics = {}
 
