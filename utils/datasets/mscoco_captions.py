@@ -2,15 +2,17 @@ import os
 import json
 from collections import OrderedDict, defaultdict
 import numpy as np
-from PIL import Image
+import pandas as pd
 from pathlib import Path
+from PIL import Image
+import itertools
 from typing import Callable, Optional
 
 from torch.utils.data import Dataset
 
 
 class MSCOCOCaptions(Dataset):
-    """
+    '''
     Args:
         root (string): Root directory where images are downloaded to.
         annotations_file (string): Path to annotation file.
@@ -20,7 +22,7 @@ class MSCOCOCaptions(Dataset):
             target and transforms it.
         max_length_tokenizer (int): The maximum length required by some text tokenizers,
         no_cap_per_img (int): The number of captions for an image. Could be between 1 and 5 
-    """
+    '''
 
     def __init__(
         self,
@@ -29,9 +31,12 @@ class MSCOCOCaptions(Dataset):
         image_transform: Optional[Callable] = None,
         caption_transform: Optional[Callable] = None,
         max_length_tokenizer: int = 77,
-        no_cap_per_img = 1
-    ) -> None:
+        no_cap_per_img = 1,
+        classified_ann_file: str = None,
+        no_image_per_cls: int = 2
+    ):
         super(MSCOCOCaptions, self).__init__()
+
         self.name = 'MSCOCO'
         self.root = root
         self.image_transform = image_transform
@@ -54,7 +59,17 @@ class MSCOCOCaptions(Dataset):
             img_id = caption_info['image_id']
             self.img_id_to_captions[img_id].append(caption_info['caption'])
 
-        self.img_ids = list(self.img_id_to_file_name.keys())
+        if classified_ann_file is None:
+            self.img_ids = list(self.img_id_to_file_name.keys())
+        else:
+            df = pd.read_csv(classified_ann_file)
+            df = df.groupby('categories').filter(lambda x: len(x) >= 2)
+            df = df.groupby('categories')[['categories', 'image_id']].apply(lambda x: x.sample(n=no_image_per_cls)).reset_index(drop=True)
+            class_img_id = df.groupby('categories')['image_id'].apply(list).to_dict()
+
+            self.img_ids = [img_ids for img_ids in class_img_id.values()]
+            self.img_ids = list(itertools.chain(*self.img_ids))
+            
 
     def __getitem__(self, index: int):
         """
@@ -66,23 +81,16 @@ class MSCOCOCaptions(Dataset):
         """
 
         img_id = self.img_ids[index]
-
-        # Image
         filename = os.path.join(self.root, self.img_id_to_file_name[img_id])
-        img = Image.open(filename).convert("RGB")
-        # img = os.path.join(self.root, self.img_id_to_file_name[img_id])
+        img = Image.open(filename).convert('RGB')
+
         if self.image_transform is not None:
             img = self.image_transform(img)
 
-        # Captions
         captions = list(
-            map(str, np.random.choice(self.img_id_to_captions[img_id], size=self.cpi))
-        )
-
-        # wanna limit the size of target here but error happened when search relevant
-        # target = self.__remove_punctuation(target)
-        # target = self.__limit_length(target)
-        
+            map(str, np.random.choice(self.img_id_to_captions[img_id], size=self.cpi, replace=False))
+            )
+            
         if self.caption_transform is not None:
             captions = self.caption_transform(
                 captions,
@@ -93,17 +101,6 @@ class MSCOCOCaptions(Dataset):
 
         return img, captions
 
+
     def __len__(self) -> int:
         return len(self.img_ids)
-    
-
-    # def __remove_punctuation(self,texts):
-    #     punctuation = string.punctuation
-    #     translator = str.maketrans('', '', punctuation)
-    #     for i, text in enumerate(texts):
-    #         texts[i] = text.translate(translator)
-    #     return texts
-    
-    # def __limit_length(self, captions, max_length=50):
-    #     # limit the length of caption
-    #     return [' '.join(caption.split()[:max_length]) for caption in captions]
